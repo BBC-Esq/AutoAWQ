@@ -9,7 +9,19 @@ from transformers.models.llama.modeling_llama import LlamaRMSNorm
 from transformers.models.gemma.modeling_gemma import GemmaRMSNorm
 from transformers.models.gemma2.modeling_gemma2 import Gemma2RMSNorm
 from transformers.models.cohere.modeling_cohere import CohereLayerNorm
-from transformers.activations import NewGELUActivation, PytorchGELUTanh, GELUActivation
+from transformers.activations import NewGELUActivation, GELUActivation
+
+# Handle PytorchGELUTanh rename in newer transformers versions
+try:
+    from transformers.activations import PytorchGELUTanh
+except ImportError:
+    try:
+        from transformers.activations import GELUTanh as PytorchGELUTanh
+    except ImportError:
+        # Fallback: create equivalent class if neither exists
+        class PytorchGELUTanh(nn.Module):
+            def forward(self, input):
+                return nn.functional.gelu(input, approximate="tanh")
 
 allowed_norms = [nn.LayerNorm, LlamaRMSNorm, GemmaRMSNorm, Gemma2RMSNorm, CohereLayerNorm]
 allowed_act_fns = [
