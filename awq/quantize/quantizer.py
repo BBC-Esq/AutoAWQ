@@ -279,8 +279,36 @@ class AwqQuantizer:
             # but only n_parallel_calib_samples at a time
             module_output = []
             partitioned_inputs = torch.split(x, self.n_parallel_calib_samples)
-            for x_partial in partitioned_inputs:
-                partial_output = module(x_partial, **module_kwargs)
+            
+            for i, x_partial in enumerate(partitioned_inputs):
+                # Calculate the slice indices for this partial batch
+                start_idx = i * self.n_parallel_calib_samples
+                end_idx = start_idx + x_partial.shape[0]
+                
+                # Create kwargs for this partial batch, slicing batch-dependent tensors
+                partial_kwargs = {}
+                for k, v in module_kwargs.items():
+                    if isinstance(v, torch.Tensor) and v.shape[0] > 1:
+                        # Check if first dimension matches the full batch size
+                        # and slice it accordingly
+                        if v.shape[0] >= end_idx:
+                            partial_kwargs[k] = v[start_idx:end_idx]
+                        else:
+                            # If tensor doesn't have batch dimension or is smaller, use as-is
+                            partial_kwargs[k] = v
+                    elif isinstance(v, tuple):
+                        # Handle tuple of tensors (e.g., position_embeddings)
+                        sliced_tuple = []
+                        for item in v:
+                            if isinstance(item, torch.Tensor) and item.shape[0] > 1 and item.shape[0] >= end_idx:
+                                sliced_tuple.append(item[start_idx:end_idx])
+                            else:
+                                sliced_tuple.append(item)
+                        partial_kwargs[k] = tuple(sliced_tuple)
+                    else:
+                        partial_kwargs[k] = v
+                
+                partial_output = module(x_partial, **partial_kwargs)
 
                 if isinstance(partial_output, tuple):
                     partial_output = partial_output[0]
@@ -572,13 +600,40 @@ class AwqQuantizer:
         modules[0] = modules[0].to(best_device)
         self.awq_model.move_embed(self.model, best_device)
 
+        # Store reference to the original layer
+        original_layer = modules[0]
+        
         # get input and kwargs to layer 0
         # with_kwargs is only supported in PyTorch 2.0
         # use this Catcher hack for now
         class Catcher(nn.Module):
             def __init__(self, module):
                 super().__init__()
-                self.module = module
+                self._module = module  # Use _module to avoid conflicts
+                # Copy all attributes from module for compatibility with Qwen3, etc.
+                for name in dir(module):
+                    if not name.startswith('_') and not callable(getattr(module, name, None)):
+                        try:
+                            setattr(self, name, getattr(module, name))
+                        except (AttributeError, RuntimeError):
+                            pass
+                # Explicitly copy known important attributes
+                for attr in ['attention_type', 'layer_idx', 'hidden_size']:
+                    if hasattr(module, attr):
+                        setattr(self, attr, getattr(module, attr))
+            
+            @property
+            def module(self):
+                return self._module
+
+            def __getattr__(self, name):
+                # Forward attribute access to wrapped module as fallback
+                if name.startswith('_'):
+                    return super().__getattr__(name)
+                try:
+                    return getattr(self._module, name)
+                except AttributeError:
+                    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
             def forward(self, *args, **kwargs):
                 # assume first input to forward is hidden states
@@ -593,13 +648,23 @@ class AwqQuantizer:
                 layer_kwargs.update(kwargs)
                 raise ValueError  # early exit to break later inference
 
-        # patch layer 0 to catch input and kwargs
-        modules[0] = Catcher(modules[0])
+        # Create catcher instance
+        catcher = Catcher(original_layer)
+        
+        # CRITICAL: Directly replace in the model's layers ModuleList
+        # This ensures the model's forward pass uses our Catcher
+        self.model.model.layers[0] = catcher
+        
         try:
-            self.model(samples.to(next(self.model.parameters()).device))
+            self.model(samples.to(best_device))
         except ValueError:  # work with early exit
             pass
-        modules[0] = modules[0].module  # restore
+        
+        # Restore original layer
+        self.model.model.layers[0] = original_layer
+        
+        # Update modules reference to match
+        modules = self.awq_model.get_model_layers(self.model)
 
         # Update the layer kwargs with `prepare_inputs_for_generation` method
         # that takes care of everything to avoid unexpected errors.
