@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from setuptools import setup, find_packages
 
-AUTOAWQ_VERSION = "0.2.9"
+AUTOAWQ_VERSION = "1.0.0"
 
 common_setup_kwargs = {
     "version": AUTOAWQ_VERSION,
