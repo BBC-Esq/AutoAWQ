@@ -9,7 +9,7 @@ common_setup_kwargs = {
     "name": "autoawq",
     "author": "Casper Hansen",
     "license": "MIT",
-    "python_requires": ">=3.8.0",
+    "python_requires": ">=3.10",
     "description": "AutoAWQ implements the AWQ algorithm for 4-bit quantization with a 2x speedup during inference.",
     "long_description": (Path(__file__).parent / "README.md").read_text(
         encoding="UTF-8"
@@ -23,10 +23,10 @@ common_setup_kwargs = {
         "Environment :: GPU :: NVIDIA CUDA :: 12",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Programming Language :: C++",
     ],
 }
@@ -40,7 +40,7 @@ requirements = [
     "accelerate",
     "datasets>=2.20",
     "zstandard",
-    "huggingface_hub>=0.26.5",
+    "huggingface_hub>=1.0.0",
 ]
 
 setup(

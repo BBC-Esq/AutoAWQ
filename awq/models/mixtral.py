@@ -5,7 +5,7 @@ from .base import BaseAWQForCausalLM
 from awq.modules.fused.block import MixtralBlock
 from awq.modules.fused.model import MixtralModel
 from awq.modules.fused.moe import FusedSparseMoeBlock
-from awq.utils.fused_utils import fuse_qkv, fuse_linears
+from awq.utils.fused_utils import fuse_qkv, fuse_linears, get_rope_theta
 from transformers.models.mixtral.modeling_mixtral import (
     MixtralDecoderLayer as OldMixtralDecoderLayer,
     MixtralForCausalLM as OldMixtralForCausalLM,
@@ -165,7 +165,7 @@ class MixtralFuser:
                     norm_2=norm_2,
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
-                    rope_theta=self.model.config.rope_theta,
+                    rope_theta=get_rope_theta(self.model),
                 )
             )
         

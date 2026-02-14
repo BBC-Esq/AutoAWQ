@@ -3,7 +3,7 @@ import tqdm
 import torch
 from typing import List, Tuple
 from .base import BaseAWQForCausalLM
-from awq.utils.fused_utils import fuse_qkv
+from awq.utils.fused_utils import fuse_qkv, get_rope_theta
 from awq.modules.fused.block import Gemma2LikeBlock
 from awq.modules.fused.model import Gemma2LikeModel
 from transformers.models.gemma2.modeling_gemma2 import (
@@ -138,7 +138,7 @@ class GemmaFuser:
                     norm_4=norm_4,
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
-                    rope_theta=self.model.config.rope_theta,
+                    rope_theta=get_rope_theta(self.model),
                     head_dim=self.model.config.head_dim,
                     attn_logit_softcapping=self.model.config.attn_logit_softcapping,
                 )

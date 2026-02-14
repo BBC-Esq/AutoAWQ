@@ -1,7 +1,7 @@
 import tqdm
 from typing import List, Tuple
 from .base import BaseAWQForCausalLM
-from awq.utils.fused_utils import fuse_qkv
+from awq.utils.fused_utils import fuse_qkv, get_rope_theta
 from awq.modules.fused.block import LlamaLikeBlock
 from awq.modules.fused.model import LlamaLikeModel
 from transformers.models.qwen2.modeling_qwen2 import (
@@ -122,7 +122,7 @@ class Qwen2Fuser:
                     norm_2=norm_2,
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
-                    rope_theta=self.model.config.rope_theta,
+                    rope_theta=get_rope_theta(self.model),
                 )
             )
 

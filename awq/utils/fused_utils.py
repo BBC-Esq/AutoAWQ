@@ -1,4 +1,5 @@
 import torch
+from transformers import PreTrainedModel
 
 from awq.modules.linear import (
     WQLinear_GEMM,
@@ -9,6 +10,26 @@ from awq.modules.linear import (
     WQLinear_GEMVFast,
     WQLinear_IPEX,
 )
+
+
+def get_rope_theta(model: PreTrainedModel, default: float = 10000.0) -> float:
+    """Get rope_theta from model config, compatible with both transformers v4 and v5.
+
+    In transformers v5, rope_theta was moved from a top-level config attribute
+    into config.rope_parameters["rope_theta"]. This helper handles both formats.
+    """
+    config = model.config
+
+    # Transformers v5+: rope_parameters is a dict containing rope_theta
+    rope_params = getattr(config, "rope_parameters", None)
+    if isinstance(rope_params, dict) and "rope_theta" in rope_params:
+        return rope_params["rope_theta"]
+
+    # Transformers v4: rope_theta is a direct config attribute
+    if hasattr(config, "rope_theta"):
+        return config.rope_theta
+
+    return default
 
 
 def prepare_cache(blocks, seqlen: int) -> int:

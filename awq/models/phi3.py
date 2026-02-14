@@ -1,7 +1,7 @@
 import tqdm
 from typing import List, Tuple
 from .base import BaseAWQForCausalLM
-from awq.utils.fused_utils import fuse_qkv
+from awq.utils.fused_utils import fuse_qkv, get_rope_theta
 from awq.modules.fused.block import Phi3Block
 from awq.modules.fused.model import Phi3Model as AWQPhi3Model
 from transformers.models.phi3.modeling_phi3 import (
@@ -110,7 +110,7 @@ class Phi3Fuser:
                     norm_2=norm_2,
                     dev=device,
                     max_seq_len=self.model.config.max_position_embeddings,
-                    rope_theta=self.model.config.rope_theta,
+                    rope_theta=get_rope_theta(self.model),
                 )
             )
 

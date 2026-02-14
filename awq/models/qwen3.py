@@ -5,7 +5,7 @@ from transformers.models.qwen3.modeling_qwen3 import (
     Qwen3DecoderLayer as OldQwen3DecoderLayer,
     Qwen3ForCausalLM as OldQwen3ForCausalLM,
 )
-from awq.utils.fused_utils import fuse_qkv
+from awq.utils.fused_utils import fuse_qkv, get_rope_theta
 from awq.modules.fused.block import QwenBlock
 from awq.modules.fused.model import LlamaLikeModel
 from awq.modules.fused.norm import FasterTransformerRMSNorm
@@ -121,7 +121,7 @@ class Qwen3Fuser:
                     norm_2=norm_2,
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
-                    rope_theta=self.model.config.rope_theta,
+                    rope_theta=get_rope_theta(self.model),
                     q_norm=module.self_attn.q_norm,
                     k_norm=module.self_attn.k_norm,
                     head_dim=self.model.config.head_dim,

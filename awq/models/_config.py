@@ -29,10 +29,9 @@ class AwqConfig(PushToHubMixin):
     def from_pretrained(cls, save_dir: str, **kwargs):
         cache_dir = kwargs.pop("cache_dir", None)
         force_download = kwargs.pop("force_download", False)
-        resume_download = kwargs.pop("resume_download", False)
         proxies = kwargs.pop("proxies", None)
         local_files_only = kwargs.pop("local_files_only", False)
-        use_auth_token = kwargs.pop("use_auth_token", None)
+        token = kwargs.pop("token", None) or kwargs.pop("use_auth_token", None)
         revision = kwargs.pop("revision", None)
         subfolder = kwargs.pop("subfolder", None)
         commit_hash = kwargs.pop("_commit_hash", None)
@@ -45,9 +44,8 @@ class AwqConfig(PushToHubMixin):
                 cls.config_file_name,
                 cache_dir=cache_dir,
                 force_download=force_download,
-                resume_download=resume_download,
                 proxies=proxies,
-                use_auth_token=use_auth_token,
+                token=token,
                 revision=revision,
                 local_files_only=local_files_only,
                 subfolder=subfolder,
