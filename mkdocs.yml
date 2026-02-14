@@ -1,6 +1,7 @@
-site_name: AutoAWQ
-repo_name: casper-hansen/AutoAWQ
-repo_url: https://github.com/casper-hansen/AutoAWQ
+site_name: AutoAWQ-Reborn
+site_description: The actively maintained successor to AutoAWQ — 4-bit AWQ quantization for modern LLMs.
+repo_name: BBC-Esq/AutoAWQ-Reborn
+repo_url: https://github.com/BBC-Esq/AutoAWQ-Reborn
 
 nav:
 - index.md
@@ -24,6 +25,7 @@ markdown_extensions:
   pymdownx.tabbed:
     alternate_style: true
   pymdownx.tilde: null
+  pymdownx.details: null
   attr_list: null
   md_in_html: null
 
