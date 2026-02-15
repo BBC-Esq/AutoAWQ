@@ -75,6 +75,17 @@ def scale_ln_fcs(ln: nn.Linear, fcs: List[nn.Linear], scales: torch.Tensor):
 
     scales = scales.to(ln.weight.device)
 
+    # Protect against zero-weight LayerNorm positions.
+    # If a LayerNorm weight is zero, dividing by scales at that position can
+    # propagate NaN/Inf through the graph. Instead, we detect zero positions,
+    # set their scales to 1 (no-op smoothing), and only normalize using the
+    # nonzero positions. This prevents NaN rather than just catching it after
+    # the fact. Inspired by lmdeploy's smooth_ln_fcs safeguard.
+    effective_weight = ln.weight + 1 if isinstance(ln, Gemma2RMSNorm) else ln.weight
+    zero_mask = effective_weight == 0
+    if zero_mask.any():
+        scales[zero_mask] = 1
+
     # GemmaRMSNorm is different from Llama's in that it multiplies
     # (1 + weight) to the output, instead of just weight.
     if isinstance(ln, Gemma2RMSNorm):
